@@ -1,0 +1,655 @@
+{
+	"info": {
+		"_postman_id": "reflexo-ghl-integration-2025",
+		"name": "Reflexo GHL Integration - Complete",
+		"description": "Colección completa para testing de sincronización bidireccional RV3 ↔ GHL\n\n**Funcionalidades:**\n- CRUD de citas con sincronización automática\n- Gestión de calendarios y locations\n- Webhooks de GHL\n- Métricas y monitoreo\n\n**Autor:** Equipo Reflexo V3\n**Fecha:** Diciembre 2025",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"auth": {
+		"type": "bearer",
+		"bearer": [
+			{
+				"key": "token",
+				"value": "{{jwt_token}}",
+				"type": "string"
+			}
+		]
+	},
+	"variable": [
+		{
+			"key": "base_url",
+			"value": "http://localhost:8000",
+			"type": "string"
+		},
+		{
+			"key": "jwt_token",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "ghl_location_id",
+			"value": "CRlTCqv7ASS9xOpPQ59O",
+			"type": "string"
+		},
+		{
+			"key": "calendar_id",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "cita_id",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "contact_id",
+			"value": "test_contact_123",
+			"type": "string"
+		}
+	],
+	"item": [
+		{
+			"name": "1. Autenticación",
+			"item": [
+				{
+					"name": "Login - Obtener JWT Token",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 200) {",
+									"    const jsonData = pm.response.json();",
+									"    pm.collectionVariables.set('jwt_token', jsonData.access);",
+									"    pm.environment.set('jwt_token', jsonData.access);",
+									"    console.log('JWT Token guardado exitosamente');",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"username\": \"admin\",\n    \"password\": \"admin123\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{base_url}}/api/architect/login/",
+							"host": ["{{base_url}}"],
+							"path": ["api", "architect", "login", ""]
+						},
+						"description": "Obtiene el token JWT para autenticación en los demás endpoints"
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "2. Citas - CRUD",
+			"item": [
+				{
+					"name": "Listar Citas",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Status code is 200', function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test('Response has results', function () {",
+									"    const jsonData = pm.response.json();",
+									"    pm.expect(jsonData).to.have.property('results');",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/ghl/citas/?page=1&page_size=10",
+							"host": ["{{base_url}}"],
+							"path": ["api", "ghl", "citas", ""],
+							"query": [
+								{
+									"key": "page",
+									"value": "1"
+								},
+								{
+									"key": "page_size",
+									"value": "10"
+								},
+								{
+									"key": "status",
+									"value": "scheduled",
+									"disabled": true
+								},
+								{
+									"key": "desde",
+									"value": "2025-12-01",
+									"disabled": true
+								},
+								{
+									"key": "hasta",
+									"value": "2025-12-31",
+									"disabled": true
+								}
+							]
+						},
+						"description": "Lista todas las citas con paginación y filtros opcionales"
+					},
+					"response": []
+				},
+				{
+					"name": "Crear Cita",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 201) {",
+									"    const jsonData = pm.response.json();",
+									"    pm.collectionVariables.set('cita_id', jsonData.id);",
+									"    console.log('Cita creada con ID:', jsonData.id);",
+									"}",
+									"",
+									"pm.test('Status code is 201', function () {",
+									"    pm.response.to.have.status(201);",
+									"});",
+									"",
+									"pm.test('Cita has ghl_appointment_id', function () {",
+									"    const jsonData = pm.response.json();",
+									"    pm.expect(jsonData).to.have.property('ghl_appointment_id');",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"title\": \"Consulta Fisioterapia - Test Postman\",\n    \"contact_id\": \"{{contact_id}}\",\n    \"ghl_calendar_id\": \"{{calendar_id}}\",\n    \"start_time\": \"2025-12-25T14:00:00-05:00\",\n    \"end_time\": \"2025-12-25T15:00:00-05:00\",\n    \"notes\": \"Cita de prueba creada desde Postman\",\n    \"assigned_user_id\": \"\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{base_url}}/api/ghl/citas/",
+							"host": ["{{base_url}}"],
+							"path": ["api", "ghl", "citas", ""]
+						},
+						"description": "Crea una nueva cita y la sincroniza automáticamente con GHL"
+					},
+					"response": []
+				},
+				{
+					"name": "Obtener Detalle de Cita",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/ghl/citas/{{cita_id}}/",
+							"host": ["{{base_url}}"],
+							"path": ["api", "ghl", "citas", "{{cita_id}}", ""]
+						},
+						"description": "Obtiene los detalles completos de una cita específica"
+					},
+					"response": []
+				},
+				{
+					"name": "Actualizar Cita",
+					"request": {
+						"method": "PUT",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"title\": \"Consulta Fisioterapia - ACTUALIZADA\",\n    \"contact_id\": \"{{contact_id}}\",\n    \"ghl_calendar_id\": \"{{calendar_id}}\",\n    \"start_time\": \"2025-12-25T15:00:00-05:00\",\n    \"end_time\": \"2025-12-25T16:00:00-05:00\",\n    \"notes\": \"Cita actualizada desde Postman\",\n    \"status\": \"confirmed\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{base_url}}/api/ghl/citas/{{cita_id}}/",
+							"host": ["{{base_url}}"],
+							"path": ["api", "ghl", "citas", "{{cita_id}}", ""]
+						},
+						"description": "Actualiza una cita existente y sincroniza con GHL"
+					},
+					"response": []
+				},
+				{
+					"name": "Cancelar Cita",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/ghl/citas/{{cita_id}}/cancel/",
+							"host": ["{{base_url}}"],
+							"path": ["api", "ghl", "citas", "{{cita_id}}", "cancel", ""]
+						},
+						"description": "Cancela una cita y sincroniza la cancelación con GHL"
+					},
+					"response": []
+				},
+				{
+					"name": "Citas Próximas",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/ghl/citas/upcoming/",
+							"host": ["{{base_url}}"],
+							"path": ["api", "ghl", "citas", "upcoming", ""]
+						},
+						"description": "Obtiene las próximas 20 citas programadas"
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "3. Calendarios",
+			"item": [
+				{
+					"name": "Listar Calendarios GHL",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 200) {",
+									"    const jsonData = pm.response.json();",
+									"    if (jsonData.calendars && jsonData.calendars.length > 0) {",
+									"        pm.collectionVariables.set('calendar_id', jsonData.calendars[0].id);",
+									"        console.log('Calendar ID guardado:', jsonData.calendars[0].id);",
+									"    }",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/ghl/calendars/?location_id={{ghl_location_id}}",
+							"host": ["{{base_url}}"],
+							"path": ["api", "ghl", "calendars", ""],
+							"query": [
+								{
+									"key": "location_id",
+									"value": "{{ghl_location_id}}"
+								}
+							]
+						},
+						"description": "Lista todos los calendarios disponibles en GHL para una location"
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "4. Locations - Configuración",
+			"item": [
+				{
+					"name": "Listar Locations",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/locations/settings/",
+							"host": ["{{base_url}}"],
+							"path": ["api", "locations", "settings", ""]
+						},
+						"description": "Lista todas las configuraciones de locations/subcuentas"
+					},
+					"response": []
+				},
+				{
+					"name": "Crear Location",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"ghl_location_id\": \"{{ghl_location_id}}\",\n    \"name\": \"Reflexo Peru - Principal\",\n    \"timezone\": \"America/Lima\",\n    \"is_active\": true\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{base_url}}/api/locations/settings/",
+							"host": ["{{base_url}}"],
+							"path": ["api", "locations", "settings", ""]
+						},
+						"description": "Crea una nueva configuración de location"
+					},
+					"response": []
+				},
+				{
+					"name": "Establecer Calendario por Defecto",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"calendar_id\": \"{{calendar_id}}\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{base_url}}/api/locations/settings/{location_id}/set_default_calendar/",
+							"host": ["{{base_url}}"],
+							"path": ["api", "locations", "settings", "{location_id}", "set_default_calendar", ""]
+						},
+						"description": "Establece el calendario por defecto para una location"
+					},
+					"response": []
+				},
+				{
+					"name": "Calendarios de Location",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/locations/settings/{location_id}/calendars/",
+							"host": ["{{base_url}}"],
+							"path": ["api", "locations", "settings", "{location_id}", "calendars", ""]
+						},
+						"description": "Lista calendarios disponibles para una location específica"
+					},
+					"response": []
+				},
+				{
+					"name": "Locations Activas",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/locations/settings/active_locations/",
+							"host": ["{{base_url}}"],
+							"path": ["api", "locations", "settings", "active_locations", ""]
+						},
+						"description": "Lista solo las locations activas con sus calendarios por defecto"
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "5. Webhooks - Simulación",
+			"item": [
+				{
+					"name": "Webhook - Appointment Created",
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"type\": \"AppointmentCreate\",\n    \"locationId\": \"{{ghl_location_id}}\",\n    \"webhookId\": \"webhook_test_001\",\n    \"data\": {\n        \"id\": \"ghl_appointment_test_001\",\n        \"calendarId\": \"{{calendar_id}}\",\n        \"contactId\": \"{{contact_id}}\",\n        \"title\": \"Cita desde Webhook Test\",\n        \"startTime\": \"2025-12-26T10:00:00.000Z\",\n        \"endTime\": \"2025-12-26T11:00:00.000Z\",\n        \"appointmentStatus\": \"scheduled\",\n        \"notes\": \"Creada por webhook de prueba\"\n    }\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{base_url}}/api/webhooks/ghl/",
+							"host": ["{{base_url}}"],
+							"path": ["api", "webhooks", "ghl", ""]
+						},
+						"description": "Simula un webhook de creación de cita desde GHL"
+					},
+					"response": []
+				},
+				{
+					"name": "Webhook - Appointment Updated",
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"type\": \"AppointmentUpdate\",\n    \"locationId\": \"{{ghl_location_id}}\",\n    \"webhookId\": \"webhook_test_002\",\n    \"data\": {\n        \"id\": \"ghl_appointment_test_001\",\n        \"calendarId\": \"{{calendar_id}}\",\n        \"contactId\": \"{{contact_id}}\",\n        \"title\": \"Cita ACTUALIZADA desde Webhook\",\n        \"startTime\": \"2025-12-26T11:00:00.000Z\",\n        \"endTime\": \"2025-12-26T12:00:00.000Z\",\n        \"appointmentStatus\": \"confirmed\",\n        \"notes\": \"Actualizada por webhook de prueba\"\n    }\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{base_url}}/api/webhooks/ghl/",
+							"host": ["{{base_url}}"],
+							"path": ["api", "webhooks", "ghl", ""]
+						},
+						"description": "Simula un webhook de actualización de cita desde GHL"
+					},
+					"response": []
+				},
+				{
+					"name": "Webhook - Appointment Deleted",
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"type\": \"AppointmentDelete\",\n    \"locationId\": \"{{ghl_location_id}}\",\n    \"webhookId\": \"webhook_test_003\",\n    \"data\": {\n        \"id\": \"ghl_appointment_test_001\"\n    }\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{base_url}}/api/webhooks/ghl/",
+							"host": ["{{base_url}}"],
+							"path": ["api", "webhooks", "ghl", ""]
+						},
+						"description": "Simula un webhook de eliminación/cancelación de cita desde GHL"
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "6. Métricas y Monitoreo",
+			"item": [
+				{
+					"name": "Métricas del Sistema",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/ghl/metrics/",
+							"host": ["{{base_url}}"],
+							"path": ["api", "ghl", "metrics", ""]
+						},
+						"description": "Obtiene métricas completas del sistema (GHL, webhooks, validaciones)"
+					},
+					"response": []
+				},
+				{
+					"name": "Métricas GHL",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/ghl/metrics/ghl/",
+							"host": ["{{base_url}}"],
+							"path": ["api", "ghl", "metrics", "ghl", ""]
+						},
+						"description": "Métricas específicas de operaciones GHL"
+					},
+					"response": []
+				},
+				{
+					"name": "Métricas Webhooks",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/ghl/metrics/webhooks/",
+							"host": ["{{base_url}}"],
+							"path": ["api", "ghl", "metrics", "webhooks", ""]
+						},
+						"description": "Métricas de procesamiento de webhooks"
+					},
+					"response": []
+				},
+				{
+					"name": "Health Check",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/ghl/health/",
+							"host": ["{{base_url}}"],
+							"path": ["api", "ghl", "health", ""]
+						},
+						"description": "Verifica la salud general del sistema"
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "7. Escenarios E2E",
+			"item": [
+				{
+					"name": "E2E - Flujo Completo RV3 → GHL",
+					"item": [
+						{
+							"name": "1. Obtener Calendarios",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"exec": [
+											"pm.test('Calendarios obtenidos', function () {",
+											"    pm.response.to.have.status(200);",
+											"    const jsonData = pm.response.json();",
+											"    pm.expect(jsonData.calendars.length).to.be.above(0);",
+											"    pm.collectionVariables.set('calendar_id', jsonData.calendars[0].id);",
+											"});"
+										],
+										"type": "text/javascript"
+									}
+								}
+							],
+							"request": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{base_url}}/api/ghl/calendars/",
+									"host": ["{{base_url}}"],
+									"path": ["api", "ghl", "calendars", ""]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "2. Crear Cita en RV3",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"exec": [
+											"pm.test('Cita creada exitosamente', function () {",
+											"    pm.response.to.have.status(201);",
+											"    const jsonData = pm.response.json();",
+											"    pm.collectionVariables.set('cita_id', jsonData.id);",
+											"    pm.expect(jsonData.ghl_appointment_id).to.not.be.null;",
+											"});"
+										],
+										"type": "text/javascript"
+									}
+								}
+							],
+							"request": {
+								"method": "POST",
+								"header": [],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n    \"title\": \"E2E Test - Cita Completa\",\n    \"contact_id\": \"{{contact_id}}\",\n    \"ghl_calendar_id\": \"{{calendar_id}}\",\n    \"start_time\": \"2025-12-27T14:00:00-05:00\",\n    \"end_time\": \"2025-12-27T15:00:00-05:00\",\n    \"notes\": \"Prueba E2E completa\"\n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "{{base_url}}/api/ghl/citas/",
+									"host": ["{{base_url}}"],
+									"path": ["api", "ghl", "citas", ""]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "3. Verificar Sincronización",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"exec": [
+											"pm.test('Cita sincronizada correctamente', function () {",
+											"    pm.response.to.have.status(200);",
+											"    const jsonData = pm.response.json();",
+											"    pm.expect(jsonData.ghl_appointment_id).to.not.be.null;",
+											"    pm.expect(jsonData.source).to.equal('rv3');",
+											"});"
+										],
+										"type": "text/javascript"
+									}
+								}
+							],
+							"request": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{base_url}}/api/ghl/citas/{{cita_id}}/",
+									"host": ["{{base_url}}"],
+									"path": ["api", "ghl", "citas", "{{cita_id}}", ""]
+								}
+							},
+							"response": []
+						}
+					]
+				}
+			]
+		}
+	]
+}
